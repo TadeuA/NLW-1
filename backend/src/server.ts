@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import cors from "cors";
-import { errors } from "celebrate";
+import { isCelebrate } from "celebrate";
 
 import routes from "./routes";
 
@@ -15,6 +15,21 @@ app.use(
   express.static(path.resolve(__dirname, "..", "uploads", "stores"))
 );
 
+const errorHandling = (err: any, req: any, res: any, next: any) => {
+  if (isCelebrate(err)) {
+    const { joi } = err;
+    const keys = joi.details.map((key: any) => {
+      return key.context.key;
+    });
+    return res.send({
+      statusCode: 400,
+      message: err.joi.message,
+      validation: keys,
+    });
+  }
+
+  return next(err);
+};
 app.use(routes);
-app.use(errors());
+app.use(errorHandling);
 app.listen(3333);
